@@ -51,22 +51,12 @@ if [[ ! -f /root/soca_preinstalled_packages.log ]]; then
     elif [[ $SOCA_BASE_OS == "centos7" ]]; then
         yum -y install epel-release
         yum install -y $(echo ${SYSTEM_PKGS[*]} ${SCHEDULER_PKGS[*]})
-    elif [[ $SOCA_BASE_OS == "ubuntu20" ]]; then
-        apt-get update
-        #apt-get install -y $(echo ${SYSTEM_PKGS_UBUNTU20[*]} ${SCHEDULER_PKGS[*]})
-        apt-get install -y $(echo ${SYSTEM_PKGS_UBUNTU20[*]})
     else
       # AL2
       sudo amazon-linux-extras install -y epel
       yum install -y $(echo ${SYSTEM_PKGS[*]} ${SCHEDULER_PKGS[*]})
     fi
-    if [[ $SOCA_BASE_OS == "ubuntu20" ]]; then
-        apt-get update
-        DEBIAN_FRONTEND=noninteractive apt-get install -y $(echo ${OPENLDAP_SERVER_PKGS_UBUNTU20[*]} ${SSSD_PKGS_UBUNTU20[*]})
-        apt-get install -y adcli
-    else
-        yum install -y $(echo ${OPENLDAP_SERVER_PKGS[*]} ${SSSD_PKGS[*]})
-    fi
+    yum install -y $(echo ${OPENLDAP_SERVER_PKGS[*]} ${SSSD_PKGS[*]})
 fi
 
 # Configure Scratch Directory if specified by the user
@@ -139,18 +129,13 @@ OPENPBS_INSTALLED_VERS=$(/opt/pbs/bin/qstat --version | awk {'print $NF'})
 if [[ "$OPENPBS_INSTALLED_VERS" != "$OPENPBS_VERSION" ]]; then
     echo "OpenPBS Not Detected, Installing OpenPBS ..."
     cd ~
-    if [[ $SOCA_BASE_OS == "ubuntu20" ]]; then
-        git clone https://github.com/openpbs/openpbs.git
-        cd openpbs
-    else
-        wget $OPENPBS_URL
-        if [[ $(md5sum $OPENPBS_TGZ | awk '{print $1}') != $OPENPBS_HASH ]]; then
-            echo -e "FATAL ERROR: Checksum for OpenPBS failed. File may be compromised." > /etc/motd
-            exit 1
-        fi
-        tar zxvf $OPENPBS_TGZ
-        cd openpbs-$OPENPBS_VERSION
+    wget $OPENPBS_URL
+    if [[ $(md5sum $OPENPBS_TGZ | awk '{print $1}') != $OPENPBS_HASH ]]; then
+        echo -e "FATAL ERROR: Checksum for OpenPBS failed. File may be compromised." > /etc/motd
+        exit 1
     fi
+    tar zxvf $OPENPBS_TGZ
+    cd openpbs-$OPENPBS_VERSION
     ./autogen.sh
     ./configure --prefix=/opt/pbs
     make -j6
@@ -189,18 +174,11 @@ if [[ "$SOCA_AUTH_PROVIDER" == "openldap" ]]; then
         ((CURRENT_ATTEMPT=CURRENT_ATTEMPT+1))
         LDAP_CONFIG=$($AWS secretsmanager get-secret-value --secret-id $SOCA_CONFIGURATION --query SecretString --output text)
     done
-
+    
     LDAP_BASE=$(echo "$LDAP_CONFIG" | grep -oP '"LdapBase":\s*\"(.*?)\"' | sed 's/"LdapBase":\s*//g' | tr -d '"')
     LDAP_NAME=$(echo "$LDAP_CONFIG" | grep -oP '"LdapName":\s*\"(.*?)\"' | sed 's/"LdapName":\s*//g' | tr -d '"')
-    if [[ $SOCA_BASE_OS == "ubuntu20" ]]; then
-        echo "TLS_CACERT /etc/openldap/cacerts/openldap-server.pem" > /etc/ldap/ldap.conf
-        echo "URI ldap://$LDAP_NAME" >> /etc/ldap/ldap.conf
-        echo "BASE $LDAP_BASE" >> /etc/ldap/ldap.conf
-        mkdir -p /etc/openldap/cacerts
-    else
-        echo "URI ldap://$LDAP_NAME" >> /etc/openldap/ldap.conf
-        echo "BASE $LDAP_BASE" >> /etc/openldap/ldap.conf
-    fi
+    echo "URI ldap://$LDAP_NAME" >> /etc/openldap/ldap.conf
+    echo "BASE $LDAP_BASE" >> /etc/openldap/ldap.conf
     if [ -e /etc/sssd/sssd.conf ]; then
         cp /etc/sssd/sssd.conf /etc/sssd/sssd.conf.orig
     fi
@@ -258,7 +236,7 @@ else
         DS_DOMAIN_NAME=$(cat /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ad_automation/domain_name.cache)
     fi
     UPPER_DS_DOMAIN_NAME=$(echo $DS_DOMAIN_NAME | tr a-z A-Z)
-
+    
     # Retrieve account with join permission if available, otherwise query SecretManager
     if [[ ! -f /apps/soca/$SOCA_CONFIGURATION/cluster_node_bootstrap/ad_automation/join_domain_user.cache ]]; then
         DS_DOMAIN_ADMIN_USERNAME=$($AWS secretsmanager get-secret-value --secret-id $SOCA_CONFIGURATION --query SecretString --output text | grep -oP '"DSDomainAdminUsername": \"(.*?)\"' | sed 's/"DSDomainAdminUsername": //g' | tr -d '"')
@@ -306,7 +284,7 @@ services = nss, pam
 [domain/default]
 ad_domain = $DS_DOMAIN_NAME
 krb5_realm = $UPPER_DS_DOMAIN_NAME
-realmd_tags = manages-system joined-with-samba
+realmd_tags = manages-system joined-with-samba 
 cache_credentials = True
 id_provider = ad
 krb5_store_password_if_offline = True

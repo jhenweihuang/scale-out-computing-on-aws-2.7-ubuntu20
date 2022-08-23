@@ -133,10 +133,6 @@ if [[ "$SOCA_FSX_LUSTRE_BUCKET" != 'false' ]] || [[ "$SOCA_FSX_LUSTRE_DNS" != 'f
         # Install FSx for Lustre Client
         if [[ "$SOCA_BASE_OS" == "amazonlinux2" ]]; then
             sudo amazon-linux-extras install -y lustre2.10
-	elif [[ "$SOCA_BASE_OS" == "ubuntu20" ]]; then
-            wget -O - https://fsx-lustre-client-repo-public-keys.s3.amazonaws.com/fsx-ubuntu-public-key.asc | sudo apt-key add -
-            sudo bash -c 'echo "deb https://fsx-lustre-client-repo.s3.amazonaws.com/ubuntu focal main" > /etc/apt/sources.list.d/fsxlustreclientrepo.list &&apt-get update'
-            sudo apt install -y lustre-client-modules-$(uname -r)
         else
             kernel=$(uname -r)
             machine=$(uname -m)

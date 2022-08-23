@@ -515,7 +515,7 @@ def check_config(**kwargs):
 
     # Validate Base OS
     if kwargs['base_os'] is not False:
-        base_os_allowed = ['rhel7', 'centos7', 'amazonlinux2', 'ubuntu20']
+        base_os_allowed = ['rhel7', 'centos7', 'amazonlinux2']
         if kwargs['base_os'] not in base_os_allowed:
             error = return_message('base_os (' + str(kwargs['base_os']) + ') must be one of the following value: ' + ','.join(base_os_allowed))
     else:

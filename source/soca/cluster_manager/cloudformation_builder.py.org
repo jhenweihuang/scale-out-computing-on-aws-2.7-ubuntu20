@@ -65,7 +65,7 @@ def main(**params):
         # Metadata
         t = Template()
         t.set_version("2010-09-09")
-        t.set_description("(SOCA) - Base template to deploy compute nodes. Version 2.7.0")
+        t.set_description("(SOCA) - Base template to deploy compute nodes. Version v2.7.0")
         allow_anonymous_data_collection = params["MetricCollectionAnonymous"]
         debug = False
         mip_usage = False
@@ -84,13 +84,6 @@ then
      PIP=$(which pip3)
      $PIP install awscli
      yum install -y nfs-utils # enforce install of nfs-utils
-elif [[ "''' + params['BaseOS'] + '''" == "ubuntu20" ]];
-then
-     apt-get update
-     apt-get install -y python3-pip
-     PIP=$(which pip3)
-     $PIP install awscli
-     apt-get install -y nfs-common
 else
      yum install -y python3-pip
      PIP=$(which pip3)
@@ -146,10 +139,6 @@ if [[ "$FS_DATA_PROVIDER" == "fsx_lustre" ]] || [[ "$FS_APPS_PROVIDER" == "fsx_l
         # Install FSx for Lustre Client
         if [[ "$SOCA_BASE_OS" == "amazonlinux2" ]]; then
             amazon-linux-extras install -y lustre2.10
-        elif [[ "$SOCA_BASE_OS" == "ubuntu20" ]]; then
-            wget -O - https://fsx-lustre-client-repo-public-keys.s3.amazonaws.com/fsx-ubuntu-public-key.asc | sudo apt-key add -
-            sudo bash -c 'echo "deb https://fsx-lustre-client-repo.s3.amazonaws.com/ubuntu focal main" > /etc/apt/sources.list.d/fsxlustreclientrepo.list && apt-get update'
-            sudo apt install -y lustre-client-modules-$(uname -r)
         else
             kernel=$(uname -r)
             machine=$(uname -m)
@@ -220,14 +209,8 @@ do
 done
 
 # Configure Chrony
-if [[ "''' + params['BaseOS'] + '''" == "ubuntu20" ]];
-then
-    apt-get remove -y ntp
-    apt-get install -y chrony
-else
-    yum remove -y ntp
-    yum install -y chrony
-fi
+yum remove -y ntp
+yum install -y chrony
 mv /etc/chrony.conf  /etc/chrony.conf.original
 echo -e """
 # use the local instance NTP service, if available

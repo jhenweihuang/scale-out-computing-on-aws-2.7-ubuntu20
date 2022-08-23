@@ -7,8 +7,8 @@ PYTHON_HASH="bcd9f22cf531efc6f06ca6b9b2919bd4"
 # Scheduler
 OPENPBS_VERSION="20.0.1"
 OPENPBS_TGZ="v20.0.1.tar.gz"
-OPENPBS_URL="https://mylab-soca.s3.amazonaws.com/soca-ubuntu/v20.0.1.tar.gz"
-OPENPBS_HASH="201afd0536780c93166db6a78f9491d4"
+OPENPBS_URL="https://github.com/openpbs/openpbs/archive/v20.0.1.tar.gz"
+OPENPBS_HASH="25d737fc3b93a973f5a7739cfd3429b3"
 
 # OpenMPI
 OPENMPI_VERSION="4.1.1"
@@ -27,11 +27,6 @@ DCV_AARCH64_TGZ="nice-dcv-2021.2-11135-el7-aarch64.tgz"
 DCV_AARCH64_URL="https://d1uj6qtbmh3dt5.cloudfront.net/2021.2/Servers/nice-dcv-2021.2-11135-el7-aarch64.tgz"
 DCV_AARCH64_HASH="aec1bb6bbda01fbf0fac820d66fb6866"
 
-DCV_UBUNTU_X86_64_VERSION="2022.0-11954-ubuntu2004-x86_64"
-DCV_UBUNTU_X86_64_TGZ="nice-dcv-2022.0-11954-ubuntu2004-x86_64.tgz"
-DCV_UBUNTU_X86_64_URL="https://d1uj6qtbmh3dt5.cloudfront.net/2022.0/Servers/nice-dcv-2022.0-11954-ubuntu2004-x86_64.tgz"
-DCV_UBUNTU_X86_64_HASH="2639b0b0cd35b2cf27e8e301d57c9e31"
-
 # EFA
 EFA_VERSION="1.13.0"
 EFA_TGZ="aws-efa-installer-1.13.0.tar.gz"
@@ -47,44 +42,10 @@ METRICBEAT_HASH="631a7e53a47c53b092f64db9cd8a96a8"
 SSM_X86_64_URL="https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_amd64/amazon-ssm-agent.rpm"
 SSM_AARCH64_URL="https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/linux_arm64/amazon-ssm-agent.rpm"
 
-# NVM
-NVM_INSTALL_SCRIPT="install.sh"
-NVM_URL="https://raw.githubusercontent.com/nvm-sh/nvm/v0.38.0/install.sh"
-NVM_HASH="661c5958387130637da5b9c778dcc7b1"
-
-# EPEL
-EPEL_RPM="epel-release-latest-7.noarch.rpm"
-EPEL_URL="https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
-EPEL_HASH="966ae7fbf5106958334a7ec9a8c22ba4"
+#NODEJS
+NVM_URL="https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh"
 
 # System libraries
-SYSTEM_PKGS_UBUNTU20=(
-    gcc
-    make
-    libtool
-    libhwloc-dev
-    libx11-dev
-    libxt-dev
-    libedit-dev
-    libical-dev
-    ncurses-dev
-    perl
-    postgresql-server-dev-all
-    postgresql-contrib
-    python3-dev
-    tcl-dev
-    tk-dev
-    swig
-    libexpat-dev
-    libssl-dev
-    libxext-dev
-    libxft-dev
-    autoconf
-    automake
-    g++
-    net-tools
-)
-
 SYSTEM_PKGS=(
     wget
     chrony
@@ -245,13 +206,6 @@ SCHEDULER_PKGS=(
     hwloc-devel
 )
 
-OPENLDAP_SERVER_PKGS_UBUNTU20=(
-    slapd
-    ldap-utils
-    unixodbc
-    unixodbc-dev
-)
-
 OPENLDAP_SERVER_PKGS=(
     compat-openldap
     cyrus-sasl
@@ -262,48 +216,6 @@ OPENLDAP_SERVER_PKGS=(
     openldap-servers
     unixODBC
     unixODBC-devel
-)
-
-SSSD_PKGS_UBUNTU20=(
-    libavahi-common3
-    bind9-libs
-    bind9-utils
-    libc-ares2
-    libcups2
-    libsasl2-2
-    libsasl2-modules-ldap
-    libsasl2-modules-gssapi-heimdal
-    libhttp-parser2.9
-    krb5-kdc
-    krb5-admin-server
-    krb5-config
-    libdhash1
-    python3-libipa-hbac
-    libldb2
-    libsmbclient
-    libsss-certmap0
-    libsss-idmap0
-    libsss-nss-idmap0
-    python3-libsss-nss-idmap
-    libsss-simpleifp0
-    libsss-sudo
-    libtalloc2
-    libtdb1
-    libtevent0
-    libwbclient0
-    oddjob
-    oddjob-mkhomedir
-    realmd
-    samba-common
-    sssd
-    sssd-ad
-    sssd-common
-    sssd-ipa
-    sssd-krb5
-    sssd-krb5-common
-    sssd-ldap
-    sssd-proxy
-    sssd-tools
 )
 
 SSSD_PKGS=(

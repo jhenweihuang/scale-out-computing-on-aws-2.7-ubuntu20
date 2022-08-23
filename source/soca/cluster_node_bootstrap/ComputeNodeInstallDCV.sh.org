@@ -28,11 +28,6 @@ if [[ -z "$(rpm -qa gnome-terminal)" ]]; then
       yum groupinstall "Server with GUI" -y
     elif [[ $SOCA_BASE_OS == "amazonlinux2" ]]; then
       yum install -y $(echo ${DCV_AMAZONLINUX_PKGS[*]})
-    elif [[ $SOCA_BASE_OS == "ubuntu20" ]]; then
-      apt-get update
-      #apt-get install -y ubuntu-gnome-desktop
-      DEBIAN_FRONTEND=noninteractive apt-get install -y lightdm ubuntu-desktop
-      apt upgrade -y
     else
       # Centos7
       yum groupinstall "GNOME Desktop" -y
@@ -46,17 +41,6 @@ systemctl set-default graphical.target
 if [[ "${GPU_INSTANCE_FAMILY[@]}" =~ "${INSTANCE_FAMILY}" ]]; then
   # clean previously installed drivers
   echo "Detected GPU instance .. installing NVIDIA Drivers"
-  if [[ $SOCA_BASE_OS == "ubuntu20" ]]; then
-      cat << EOF | sudo tee --append /etc/modprobe.d/blacklist.conf
-blacklist vga16fb
-blacklist nouveau
-blacklist rivafb
-blacklist nvidiafb
-blacklist rivatv
-EOF
-      echo 'GRUB_CMDLINE_LINUX="rdblacklist=nouveau"' >> /etc/default/grub
-      update-grub
-  fi
   rm -f /root/NVIDIA-Linux-x86_64*.run
   $AWS s3 cp --quiet --recursive s3://ec2-linux-nvidia-drivers/latest/ .
   rm -rf /tmp/.X*
@@ -69,17 +53,6 @@ cd ~
 # Download and Install DCV
 machine=$(uname -m)
 echo "Installing DCV"
-if [[ $SOCA_BASE_OS == "ubuntu20" ]]; then
-    if [[ $machine == "x86_64" ]]; then
-        wget $DCV_UBUNTU_X86_64_URL
-        if [[ $(md5sum $DCV_UBUNTU_X86_64_TGZ | awk '{print $1}') != $DCV_UBUNTU_X86_64_HASH ]];  then
-            echo -e "FATAL ERROR: Checksum for DCV failed. File may be compromised." > /etc/motd
-            exit 1
-        fi
-        tar zxvf $DCV_UBUNTU_X86_64_TGZ
-        cd nice-dcv-$DCV_UBUNTU_X86_64_VERSION
-    fi
-else
 if [[ $machine == "x86_64" ]]; then
     wget $DCV_X86_64_URL
     if [[ $(md5sum $DCV_X86_64_TGZ | awk '{print $1}') != $DCV_X86_64_HASH ]];  then
@@ -97,35 +70,19 @@ elif [[ $machine == "aarch64" ]]; then
     tar zxvf $DCV_AARCH64_TGZ
     cd nice-dcv-$DCV_AARCH64_VERSION
 fi
-fi
-
-if [[ $SOCA_BASE_OS == "ubuntu20" ]]; then
-    apt-get install -y ./nice-xdcv_*amd64.ubuntu*.deb
-    apt-get install -y ./nice-dcv-server_*amd64.ubuntu*.deb
-    apt-get install -y ./nice-dcv-web-viewer_*amd64.ubuntu*.deb
-else
-    rpm -ivh nice-xdcv-*.${machine}.rpm --nodeps
-    rpm -ivh nice-dcv-server-*.${machine}.rpm --nodeps
-    rpm -ivh nice-dcv-web-viewer-*.${machine}.rpm --nodeps
-fi
+rpm -ivh nice-xdcv-*.${machine}.rpm --nodeps
+rpm -ivh nice-dcv-server-*.${machine}.rpm --nodeps
+rpm -ivh nice-dcv-web-viewer-*.${machine}.rpm --nodeps
 
 # Enable DCV support for USB remotization
-if [[ $SOCA_BASE_OS == "ubuntu20" ]]; then
-    apt-get install -y dkms
-else
-    yum install -y dkms
-fi
+yum install -y dkms
 DCVUSBDRIVERINSTALLER=$(which dcvusbdriverinstaller)
 $DCVUSBDRIVERINSTALLER --quiet
 
 # Enable GPU support
 if [[ "${GPU_INSTANCE_FAMILY[@]}" =~ "${INSTANCE_FAMILY}" ]]; then
     echo "Detected GPU instance, adding support for nice-dcv-gl"
-    if [[ $SOCA_BASE_OS == "ubuntu20" ]]; then
-        apt-get install -y ./nice-dcv-gl_*amd64.ubuntu*.deb
-    else
-        rpm -ivh nice-dcv-gl*.rpm --nodeps
-    fi
+    rpm -ivh nice-dcv-gl*.rpm --nodeps
     #DCVGLADMIN=$(which dcvgladmin)
     #$DCVGLADMIN enable
 fi
@@ -195,9 +152,3 @@ else
   echo "@reboot dcv create-session --owner $SOCA_DCV_OWNER --storage-root \"$DCV_STORAGE_ROOT\" $SOCA_DCV_SESSION_ID # Do Not Delete"| crontab - -u $SOCA_DCV_OWNER
   exit 0
 fi
-if [[ $SOCA_BASE_OS == "ubuntu20" ]]; then
-  echo "OS is Ubuntu20, reboot machine"
-  reboot
-fi
-
-reboot

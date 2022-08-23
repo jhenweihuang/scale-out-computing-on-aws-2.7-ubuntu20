@@ -89,8 +89,8 @@ class ManageImage(Resource):
         if args["os"] is None or args["ami_label"] is None or args["ami_id"] is None or args["root_size"] is None:
             return errors.all_errors('CLIENT_MISSING_PARAMETER', "os (str), ami_id (str), ami_label (str) and root_size (str)  are required.")
 
-        if args["os"].lower() not in ["centos7", "rhel7", "amazonlinux2", "windows", "ubuntu20"]:
-            return errors.all_errors('CLIENT_MISSING_PARAMETER', "os must be centos7, rhel7, amazonlinux2, ubuntu20 or windows")
+        if args["os"].lower() not in ["centos7", "rhel7", "amazonlinux2", "windows"]:
+            return errors.all_errors('CLIENT_MISSING_PARAMETER', "os must be centos7, rhel7, amazonlinux2, or windows")
 
         try:
             root_size = int(args["root_size"])
@@ -120,7 +120,7 @@ class ManageImage(Resource):
                         return errors.all_errors('IMAGE_REGISTER_ERROR', f"{ami_id} registration not successful")
                 else:
                     logger.error(f"{ami_id} is not available in AWS account")
-                    return errors.all_errors('IMAGE_REGISTER_ERROR', f"{ami_id} is not available in AWS account. If you just created it, make sure the stateof the image is 'available' on the AWS console")
+                    return errors.all_errors('IMAGE_REGISTER_ERROR', f"{ami_id} is not available in AWS account. If you just created it, make sure the state of the image is 'available' on the AWS console")
             except botocore.exceptions.ClientError as error:
                 logger.error(f"Failed Creating AMI {ami_label} {ami_id} {error}")
                 return errors.all_errors('IMAGE_REGISTER_ERROR', f"{ami_id} Couldn't locate {ami_id} in AWS account. Make sure you do have permission to view it")

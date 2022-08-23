@@ -62,7 +62,7 @@ def can_launch_instance(launch_parameters):
             SecurityGroupIds=[launch_parameters["security_group_id"]],
             InstanceType=launch_parameters["instance_type"],
             IamInstanceProfile={'Arn': launch_parameters["instance_profile"]},
-            SubnetId=random.choice(launch_parameters["soca_private_subnets"]) if not launch_parameters["subnet_id"] else launch_parameters["subnet_id"],
+            SubnetId=random.choice(launch_parameters["soca_private_subnets"]) if launch_parameters["subnet_id"] is None else launch_parameters["subnet_id"],
             UserData=launch_parameters["user_data"],
             ImageId=launch_parameters["image_id"],
             DryRun=True,
@@ -154,9 +154,6 @@ class CreateLinuxDesktop(Resource):
         args = parser.parse_args()
         logger.info(f"Received parameter for new Linux DCV session: {args}")
 
-        if not args["subnet_id"]:
-            args["subnet_id"] = False
-
         if session_number is None:
             return errors.all_errors('CLIENT_MISSING_PARAMETER', "session_number not found in URL. Endpoint is /api/dcv/desktop/<session_number>/linux")
         else:
@@ -187,7 +184,7 @@ class CreateLinuxDesktop(Resource):
 
             try:
                 if int(args["session_number"]) > int(config.Config.DCV_LINUX_SESSION_COUNT):
-                    return errors.all_errors("DCV_LAUNCH_ERROR", f"session_number {args['session_number']} is greater than the max number of session allowed({config.Config.DCV_LINUX_SESSION_COUNT}). Contact admin for increase.")
+                    return errors.all_errors("DCV_LAUNCH_ERROR", f"session_number {args['session_number']} is greater than the max number of session allowed ({config.Config.DCV_LINUX_SESSION_COUNT}). Contact admin for increase.")
             except Exception as err:
                 return errors.all_errors("DCV_LAUNCH_ERROR", f"Session Number {args['session_number']} must be a number. Err: {err}")
 
@@ -234,13 +231,6 @@ class CreateLinuxDesktop(Resource):
                     PIP=$(which pip3)
                     $PIP install awscli
                     yum install -y nfs-utils # enforce install of nfs-utils
-            elif [[ "''' + base_os + '''" == "ubuntu20" ]];
-            then
-                apt-get update
-                apt-get install -y python3-pip
-                PIP=$(which pip3)
-                $PIP install awscli
-                apt-get install -y nfs-common
             else
                  yum install -y python3-pip
                  PIP=$(which pip3)
@@ -250,7 +240,7 @@ class CreateLinuxDesktop(Resource):
                 then
                     /usr/sbin/update-motd --disable
             fi
-
+    
             GET_INSTANCE_TYPE=$(curl http://169.254.169.254/latest/meta-data/instance-type)
             echo export "SOCA_DCV_AUTHENTICATOR="https://''' + soca_configuration[
                 'SchedulerPrivateDnsName'] + ''':''' + config.Config.FLASK_PORT + '''/api/dcv/authenticator"" >> /etc/environment
@@ -275,8 +265,8 @@ class CreateLinuxDesktop(Resource):
             echo export "SOCA_JOB_OWNER="''' + user + '''"" >> /etc/environment
             echo export "SOCA_JOB_PROJECT="dcv"" >> /etc/environment
             echo export "SOCA_JOB_QUEUE="dcv"" >> /etc/environment
-
-
+    
+    
             source /etc/environment
             AWS=$(which aws)
             # Give yum permission to the user on this specific machine
@@ -294,10 +284,6 @@ class CreateLinuxDesktop(Resource):
                     # Install FSx for Lustre Client
                     if [[ "$SOCA_BASE_OS" == "amazonlinux2" ]]; then
                         amazon-linux-extras install -y lustre2.10
-                    elif [[ "$SOCA_BASE_OS" == "ubuntu20" ]]; then
-                        wget -O - https://fsx-lustre-client-repo-public-keys.s3.amazonaws.com/fsx-ubuntu-public-key.asc | sudo apt-key add -
-                        sudo bash -c 'echo "deb https://fsx-lustre-client-repo.s3.amazonaws.com/ubuntu focal main" > /etc/apt/sources.list.d/fsxlustreclientrepo.list && apt-get update'
-                        sudo apt install -y lustre-client-modules-$(uname -r)
                     else
                         kernel=$(uname -r)
                         machine=$(uname -m)
@@ -344,7 +330,7 @@ class CreateLinuxDesktop(Resource):
                 echo "$FS_DATA:/ /data nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport 0 0" >> /etc/fstab
             elif [[ "$FS_DATA_PROVIDER" == "fsx_lustre" ]]; then
                 FSX_ID=$(echo $FS_DATA | cut -d. -f1)
-                FSX_DATA_MOUNT_NAME=$($AWS fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].LustreConfiguration.MountName --outputtext)
+                FSX_DATA_MOUNT_NAME=$($AWS fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].LustreConfiguration.MountName --output text)
                 echo "$FS_DATA@tcp:/$FSX_DATA_MOUNT_NAME /data lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
             fi
 
@@ -352,12 +338,12 @@ class CreateLinuxDesktop(Resource):
                 echo "$FS_APPS:/ /apps nfs4 nfsvers=4.1,rsize=1048576,wsize=1048576,hard,timeo=600,retrans=2,noresvport 0 0" >> /etc/fstab
             elif [[ "$FS_APPS_PROVIDER" == "fsx_lustre" ]]; then
                 FSX_ID=$(echo $FS_APPS | cut -d. -f1)
-                FSX_APPS_MOUNT_NAME=$($AWS fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].LustreConfiguration.MountName --outputtext)
+                FSX_APPS_MOUNT_NAME=$($AWS fsx describe-file-systems --file-system-ids $FSX_ID  --query FileSystems[].LustreConfiguration.MountName --output text)
                 echo "$FS_APPS@tcp:/$FSX_APPS_MOUNT_NAME /apps lustre defaults,noatime,flock,_netdev 0 0" >> /etc/fstab
             fi
 
             FS_MOUNT=0
-            mount -a
+            mount -a 
             while [[ $? -ne 0 ]] && [[ $FS_MOUNT -lt 5 ]]
             do
                 SLEEP_TIME=$(( RANDOM % 60 ))
@@ -366,21 +352,15 @@ class CreateLinuxDesktop(Resource):
                 ((FS_MOUNT++))
                 mount -a
             done
-
+                
             # Configure Chrony
-            if [[ "''' + base_os + '''" == "ubuntu20" ]];
-            then
-                apt-get remove -y ntp
-                apt-get install -y chrony
-            else
-                yum remove -y ntp
-                yum install -y chrony
-            fi
+            yum remove -y ntp
+            yum install -y chrony
             mv /etc/chrony.conf  /etc/chrony.conf.original
             echo -e """
             # use the local instance NTP service, if available
             server 169.254.169.123 prefer iburst minpoll 4 maxpoll 4
-
+    
             # Use public servers from the pool.ntp.org project.
             # Please consider joining the pool (http://www.pool.ntp.org/join.html).
             # !!! [BEGIN] SOCA REQUIREMENT
@@ -389,22 +369,22 @@ class CreateLinuxDesktop(Resource):
             # !!! [END] SOCA REQUIREMENT
             # Record the rate at which the system clock gains/losses time.
             driftfile /var/lib/chrony/drift
-
+    
             # Allow the system clock to be stepped in the first three updates
             # if its offset is larger than 1 second.
             makestep 1.0 3
-
+    
             # Specify file containing keys for NTP authentication.
             keyfile /etc/chrony.keys
-
+    
             # Specify directory for log files.
             logdir /var/log/chrony
-
+    
             # save data between restarts for fast re-load
             dumponexit
             dumpdir /var/run/chrony
             """ > /etc/chrony.conf
-
+    
             systemctl enable chronyd
             # Prepare  Log folder
             mkdir -p $SOCA_HOST_SYSTEM_LOG

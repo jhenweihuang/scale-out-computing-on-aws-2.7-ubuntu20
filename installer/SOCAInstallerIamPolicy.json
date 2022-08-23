@@ -144,7 +144,6 @@
                 "backup:DeleteBackupSelection",
                 "backup:DeleteBackupVault",
                 "cloudformation:DeleteChangeSet",
-                "cloudformation:DeleteStack",
                 "cloudwatch:DeleteAlarms",
                 "ds:DeleteDirectory",
                 "ec2:DeleteFlowLogs",
